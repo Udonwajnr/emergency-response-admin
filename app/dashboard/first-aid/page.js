@@ -41,7 +41,7 @@ import { MobileSearch } from "@/components/mobile-search"
 import { PullToRefresh } from "@/components/pull-to-refresh"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { firstAidService } from "@/services/firstAidService"
-import { RichTextEditor, EmergencyTemplates } from "@/components/quill-wrapper"
+import { EnhancedQuillEditor } from "@/components/enhanced-quill-editor"
 import { cn } from "@/lib/utils"
 
 export default function FirstAidGuidesPage() {
@@ -137,10 +137,12 @@ export default function FirstAidGuidesPage() {
   })
 
   const handleCreateGuide = async () => {
-    if (!newGuide.category || !newGuide.content || !newGuide.title) {
+    // Validate guide data
+    const validation = firstAidService.validateGuideData(newGuide)
+    if (!validation.isValid) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: validation.errors.join(", "),
         variant: "destructive",
       })
       return
@@ -157,7 +159,7 @@ export default function FirstAidGuidesPage() {
 
         toast({
           title: "Success",
-          description: "First aid guide created successfully",
+          description: result.message,
         })
       } else {
         toast({
@@ -178,10 +180,12 @@ export default function FirstAidGuidesPage() {
   }
 
   const handleUpdateGuide = async () => {
-    if (!editingGuide.category || !editingGuide.content || !editingGuide.title) {
+    // Validate guide data
+    const validation = firstAidService.validateGuideData(editingGuide)
+    if (!validation.isValid) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: validation.errors.join(", "),
         variant: "destructive",
       })
       return
@@ -189,13 +193,7 @@ export default function FirstAidGuidesPage() {
 
     try {
       setSubmitting(true)
-      const result = await firstAidService.updateGuide(editingGuide._id, {
-        category: editingGuide.category,
-        language: editingGuide.language,
-        content: editingGuide.content,
-        title: editingGuide.title,
-        description: editingGuide.description,
-      })
+      const result = await firstAidService.updateGuide(editingGuide._id, editingGuide)
 
       if (result.success) {
         setGuides((prev) => prev.map((guide) => (guide._id === editingGuide._id ? result.data.guide : guide)))
@@ -203,7 +201,7 @@ export default function FirstAidGuidesPage() {
 
         toast({
           title: "Success",
-          description: "First aid guide updated successfully",
+          description: result.message,
         })
       } else {
         toast({
@@ -767,14 +765,7 @@ export default function FirstAidGuidesPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="content">Guide Content *</Label>
-                <EmergencyTemplates
-                  onInsertTemplate={(templateType) => {
-                    if (editorRef.current) {
-                      editorRef.current.insertTemplate(templateType)
-                    }
-                  }}
-                />
-                <RichTextEditor
+                <EnhancedQuillEditor
                   ref={editorRef}
                   value={editingGuide ? editingGuide.content : newGuide.content}
                   onChange={(content) => {
@@ -784,8 +775,16 @@ export default function FirstAidGuidesPage() {
                       setNewGuide((prev) => ({ ...prev, content }))
                     }
                   }}
+                  onSave={async (content) => {
+                    // Auto-save functionality
+                    if (editingGuide) {
+                      await handleUpdateGuide()
+                    }
+                  }}
                   placeholder="Write comprehensive first aid instructions here. Use the emergency templates above to add highlighted steps, warnings, and information boxes..."
-                  height={500}
+                  height={600}
+                  autoSave={true}
+                  autoSaveInterval={30000}
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   💡 Use the emergency templates above to add highlighted steps, warning boxes, and info callouts for
