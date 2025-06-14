@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, Heart, Settings, Menu } from "lucide-react"
+import { LayoutDashboard, Users, Menu, AlertTriangle, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -21,14 +21,14 @@ const navItems = [
     icon: Users,
   },
   {
-    title: "First Aid",
-    href: "/dashboard/first-aid",
-    icon: Heart,
+    title: "Emergencies",
+    href: "/dashboard/emergencies",
+    icon: AlertTriangle,
   },
   {
-    title: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
+    title: "Units",
+    href: "/dashboard/emergency-units",
+    icon: Shield,
   },
 ]
 

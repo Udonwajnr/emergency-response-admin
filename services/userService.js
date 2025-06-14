@@ -66,4 +66,17 @@ export const userService = {
       }
     }
   },
+
+  // Review user document (admin action)
+  reviewDocument: async (reviewData) => {
+    try {
+      const response = await api.patch(API_ENDPOINTS.USERS.REVIEW_DOCUMENT, reviewData)
+      return { success: true, data: response.data }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to review document",
+      }
+    }
+  },
 }

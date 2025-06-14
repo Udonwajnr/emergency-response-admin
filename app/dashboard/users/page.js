@@ -1,10 +1,7 @@
 "use client"
 
-import { Label } from "@/components/ui/label"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -18,186 +15,183 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Eye, CheckCircle, XCircle, Clock, Users } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Users,
+  FileText,
+  Download,
+  Trash2,
+  AlertTriangle,
+  RefreshCw,
+  UserCheck,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  Shield,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { userService } from "@/services/userService"
+import { PullToRefresh } from "@/components/pull-to-refresh"
+import { MobileSearch } from "@/components/mobile-search"
 
 export default function UsersPage() {
   const [users, setUsers] = useState([])
-  const [pendingVerifications, setPendingVerifications] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRole, setSelectedRole] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedUser, setSelectedUser] = useState(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [documentToReview, setDocumentToReview] = useState(null)
+  const [reviewData, setReviewData] = useState({
+    status: "",
+    reason: "",
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState("all")
+  const [stats, setStats] = useState({
+    total: 0,
+    clients: 0,
+    freelancers: 0,
+    emergencyUnits: 0,
+    admins: 0,
+    verified: 0,
+    pending: 0,
+  })
   const { toast } = useToast()
 
-  useEffect(() => {
-    // Simulate fetching users with document upload status
-    const allUsers = [
-      {
-        _id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "+1234567890",
-        role: "client",
-        isVerified: true,
-        isApprovedByAdmin: true,
-        hasUploadedDocuments: false,
-        createdAt: "2024-01-15T10:30:00Z",
-        location: { city: "New York", state: "NY" },
-      },
-      {
-        _id: "2",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        phone: "+1234567891",
-        role: "freelancer",
-        isVerified: false,
-        isApprovedByAdmin: false,
-        hasUploadedDocuments: true,
-        documentsUploadedAt: "2024-01-14T14:20:00Z",
-        createdAt: "2024-01-14T14:20:00Z",
-        location: { city: "Los Angeles", state: "CA" },
-        servicesOffered: ["nurse", "first-aid"],
-        documents: {
-          nationalID: "/uploads/jane-national-id.pdf",
-          certificationFiles: ["/uploads/jane-cert1.pdf", "/uploads/jane-cert2.pdf"],
-        },
-      },
-      {
-        _id: "3",
-        name: "Emergency Unit Alpha",
-        email: "alpha@emergency.com",
-        phone: "+1234567892",
-        role: "emergency_unit",
-        isVerified: true,
-        isApprovedByAdmin: true,
-        hasUploadedDocuments: true,
-        documentsUploadedAt: "2024-01-13T09:15:00Z",
-        createdAt: "2024-01-13T09:15:00Z",
-        location: { city: "Chicago", state: "IL" },
-        servicesOffered: ["ambulance", "fire", "rescue"],
-        documents: {
-          nationalID: "/uploads/alpha-national-id.pdf",
-          certificationFiles: ["/uploads/alpha-cert1.pdf"],
-        },
-      },
-      {
-        _id: "4",
-        name: "Mike Johnson",
-        email: "mike@freelancer.com",
-        phone: "+1234567893",
-        role: "freelancer",
-        isVerified: false,
-        isApprovedByAdmin: false,
-        hasUploadedDocuments: true,
-        documentsUploadedAt: "2024-01-12T16:30:00Z",
-        createdAt: "2024-01-12T16:30:00Z",
-        location: { city: "Miami", state: "FL" },
-        servicesOffered: ["paramedic", "first-aid"],
-        documents: {
-          nationalID: "/uploads/mike-national-id.pdf",
-          certificationFiles: ["/uploads/mike-cert1.pdf"],
-        },
-      },
-      {
-        _id: "5",
-        name: "Sarah Wilson",
-        email: "sarah@emergency.com",
-        phone: "+1234567894",
-        role: "emergency_unit",
-        isVerified: false,
-        isApprovedByAdmin: false,
-        hasUploadedDocuments: false,
-        createdAt: "2024-01-11T11:45:00Z",
-        location: { city: "Seattle", state: "WA" },
-        servicesOffered: ["fire", "rescue"],
-      },
-    ]
-
-    setUsers(allUsers)
-
-    // Filter and sort pending verifications
-    const pending = allUsers
-      .filter(
-        (user) =>
-          (user.role === "freelancer" || user.role === "emergency_unit") &&
-          user.hasUploadedDocuments &&
-          !user.isVerified,
-      )
-      .sort((a, b) => new Date(b.documentsUploadedAt) - new Date(a.documentsUploadedAt))
-
-    setPendingVerifications(pending)
-  }, [])
-
-  const filteredUsers = users
-    .filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesRole = selectedRole === "all" || user.role === selectedRole
-      const matchesStatus =
-        selectedStatus === "all" ||
-        (selectedStatus === "verified" && user.isVerified) ||
-        (selectedStatus === "pending" && !user.isVerified && user.hasUploadedDocuments) ||
-        (selectedStatus === "approved" && user.isApprovedByAdmin) ||
-        (selectedStatus === "unapproved" && !user.isApprovedByAdmin) ||
-        (selectedStatus === "documents_uploaded" && user.hasUploadedDocuments) ||
-        (selectedStatus === "no_documents" && !user.hasUploadedDocuments)
-      return matchesSearch && matchesRole && matchesStatus
-    })
-    .sort((a, b) => {
-      // Prioritize users with uploaded documents who need verification
-      if (
-        (a.role === "freelancer" || a.role === "emergency_unit") &&
-        (b.role === "freelancer" || b.role === "emergency_unit")
-      ) {
-        // First priority: Users with documents uploaded but not verified
-        const aPriority = a.hasUploadedDocuments && !a.isVerified
-        const bPriority = b.hasUploadedDocuments && !b.isVerified
-
-        if (aPriority && !bPriority) return -1
-        if (!aPriority && bPriority) return 1
-
-        // Second priority: Sort by document upload date (newest first)
-        if (aPriority && bPriority) {
-          return new Date(b.documentsUploadedAt) - new Date(a.documentsUploadedAt)
-        }
-      }
-
-      // Default sort by creation date
-      return new Date(b.createdAt) - new Date(a.createdAt)
-    })
-
-  const handleVerifyUser = async (userId, action) => {
+  const loadUsers = async () => {
     try {
-      setUsers((prev) =>
-        prev.map((user) =>
-          user._id === userId
-            ? {
-                ...user,
-                isVerified: action === "verify",
-                isApprovedByAdmin: action === "verify",
-              }
-            : user,
-        ),
-      )
+      setLoading(true)
+      const result = await userService.getUsers()
 
-      // Update pending verifications list
-      if (action === "verify") {
-        setPendingVerifications((prev) => prev.filter((user) => user._id !== userId))
+      if (result.success) {
+        setUsers(result.data)
+        calculateStats(result.data)
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        })
       }
-
-      toast({
-        title: "Success",
-        description: `User ${action === "verify" ? "verified" : "rejected"} successfully`,
-      })
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${action} user`,
+        description: "Failed to load users",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const calculateStats = (userData) => {
+    const total = userData.length
+    const clients = userData.filter((u) => u.role === "client").length
+    const freelancers = userData.filter((u) => u.role === "freelancer").length
+    const emergencyUnits = userData.filter((u) => u.role === "emergency_unit").length
+    const admins = userData.filter((u) => u.role === "admin").length
+    const verified = userData.filter((u) => u.isVerified && u.isApprovedByAdmin).length
+    const pending = userData.filter(
+      (u) =>
+        (u.role === "freelancer" || u.role === "emergency_unit") &&
+        u.documents &&
+        (u.documents.nationalID?.status === "pending" ||
+          u.documents.certificationFiles?.some((file) => file.status === "pending")),
+    ).length
+
+    setStats({ total, clients, freelancers, emergencyUnits, admins, verified, pending })
+  }
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setSubmitting(true)
+      const result = await userService.deleteUser(userToDelete._id)
+
+      if (result.success) {
+        setUsers((prev) => prev.filter((user) => user._id !== userToDelete._id))
+        toast({
+          title: "Success",
+          description: "User deleted successfully",
+        })
+        setIsDeleteDialogOpen(false)
+        setUserToDelete(null)
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleReviewDocument = async () => {
+    if (!documentToReview || !reviewData.status) return
+
+    try {
+      setSubmitting(true)
+      const result = await userService.reviewDocument({
+        userId: documentToReview.userId,
+        type: documentToReview.type,
+        index: documentToReview.index,
+        status: reviewData.status,
+        reason: reviewData.reason,
+      })
+
+      if (result.success) {
+        // Update the user in the list
+        setUsers((prev) => prev.map((user) => (user._id === documentToReview.userId ? result.data.user : user)))
+
+        toast({
+          title: "Success",
+          description: `Document ${reviewData.status} successfully`,
+        })
+
+        setIsReviewDialogOpen(false)
+        setDocumentToReview(null)
+        setReviewData({ status: "", reason: "" })
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to review document",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -226,12 +220,14 @@ export default function UsersPage() {
     } else {
       if (user.isVerified && user.isApprovedByAdmin) {
         return <CheckCircle className="h-4 w-4 text-green-500" />
-      } else if (user.hasUploadedDocuments && !user.isVerified) {
+      } else if (
+        user.documents &&
+        (user.documents.nationalID?.status === "pending" ||
+          user.documents.certificationFiles?.some((file) => file.status === "pending"))
+      ) {
         return <Clock className="h-4 w-4 text-orange-500" />
-      } else if (!user.hasUploadedDocuments) {
-        return <XCircle className="h-4 w-4 text-red-500" />
       } else {
-        return <Clock className="h-4 w-4 text-yellow-500" />
+        return <XCircle className="h-4 w-4 text-red-500" />
       }
     }
   }
@@ -242,141 +238,68 @@ export default function UsersPage() {
     } else {
       if (user.isVerified && user.isApprovedByAdmin) {
         return "Verified & Approved"
-      } else if (user.hasUploadedDocuments && !user.isVerified) {
-        return "Documents Uploaded - Needs Verification"
-      } else if (!user.hasUploadedDocuments) {
-        return "No Documents Uploaded"
+      } else if (
+        user.documents &&
+        (user.documents.nationalID?.status === "pending" ||
+          user.documents.certificationFiles?.some((file) => file.status === "pending"))
+      ) {
+        return "Documents Pending Review"
       } else {
-        return "Pending Verification"
+        return "No Documents Uploaded"
       }
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">Manage all users in the emergency response system</p>
-        </div>
-      </div>
+  const filteredUsers = users.filter((user) => {
+    // Filter by tab
+    if (activeTab === "verified" && (!user.isVerified || !user.isApprovedByAdmin)) return false
+    if (
+      activeTab === "pending" &&
+      !(
+        user.documents &&
+        (user.documents.nationalID?.status === "pending" ||
+          user.documents.certificationFiles?.some((file) => file.status === "pending"))
+      )
+    )
+      return false
+    if (activeTab === "freelancers" && user.role !== "freelancer") return false
+    if (activeTab === "emergency_units" && user.role !== "emergency_unit") return false
 
-      {/* Priority Section - Pending Verifications */}
-      {pendingVerifications.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader>
-            <CardTitle className="text-lg text-orange-800 flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Priority: Pending Verifications ({pendingVerifications.length})
-            </CardTitle>
-            <CardDescription className="text-orange-700">
-              Users who have uploaded documents and are waiting for verification
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pendingVerifications.slice(0, 3).map((user) => (
-                <div key={user._id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarImage src={user.profilePhoto || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        {user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
-                      <Badge className={getRoleColor(user.role)} size="sm">
-                        {user.role.replace("_", " ")}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-muted-foreground text-right">
-                      <div>Documents uploaded</div>
-                      <div>{new Date(user.documentsUploadedAt).toLocaleDateString()}</div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleVerifyUser(user._id, "verify")}
-                      className="text-green-600 hover:text-green-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Verify
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {pendingVerifications.length > 3 && (
-                <div className="text-center">
-                  <Button variant="outline" onClick={() => setSelectedStatus("pending")} className="text-orange-600">
-                    View All {pendingVerifications.length} Pending
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+    // Filter by search term
+    const matchesSearch =
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone?.toLowerCase().includes(searchTerm.toLowerCase())
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clients</CardTitle>
-            <Users className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.role === "client").length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Freelancers</CardTitle>
-            <Users className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.role === "freelancer").length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Emergency Units</CardTitle>
-            <Users className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.role === "emergency_unit").length}</div>
-          </CardContent>
-        </Card>
-      </div>
+    // Filter by role
+    const matchesRole = selectedRole === "all" || user.role === selectedRole
 
-      {/* Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+    // Filter by status
+    const matchesStatus =
+      selectedStatus === "all" ||
+      (selectedStatus === "verified" && user.isVerified && user.isApprovedByAdmin) ||
+      (selectedStatus === "pending" &&
+        user.documents &&
+        (user.documents.nationalID?.status === "pending" ||
+          user.documents.certificationFiles?.some((file) => file.status === "pending"))) ||
+      (selectedStatus === "unverified" && !user.isVerified)
+
+    return matchesSearch && matchesRole && matchesStatus
+  })
+
+  const pendingDocuments = users.filter(
+    (user) =>
+      user.documents &&
+      (user.documents.nationalID?.status === "pending" ||
+        user.documents.certificationFiles?.some((file) => file.status === "pending")),
+  )
+
+  const filterComponent = (
+    <div className="space-y-4">
+      <div>
+        <Label className="text-sm font-medium">Role</Label>
         <Select value={selectedRole} onValueChange={setSelectedRole}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="mt-2 mobile-input">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -387,50 +310,137 @@ export default function UsersPage() {
             <SelectItem value="admin">Admins</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div>
+        <Label className="text-sm font-medium">Status</Label>
         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="mt-2 mobile-input">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="verified">Verified</SelectItem>
-            <SelectItem value="pending">Pending Verification</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="unapproved">Unapproved</SelectItem>
-            <SelectItem value="documents_uploaded">Documents Uploaded</SelectItem>
-            <SelectItem value="no_documents">No Documents</SelectItem>
+            <SelectItem value="pending">Pending Review</SelectItem>
+            <SelectItem value="unverified">Unverified</SelectItem>
           </SelectContent>
         </Select>
       </div>
+    </div>
+  )
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>A list of all users in the system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <PullToRefresh onRefresh={loadUsers}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">User Management</h1>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Manage all users in the emergency response system
+            </p>
+          </div>
+          <Button onClick={loadUsers} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-7">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Clients</CardTitle>
+              <Users className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.clients}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Freelancers</CardTitle>
+              <UserCheck className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.freelancers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Emergency Units</CardTitle>
+              <Shield className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.emergencyUnits}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Admins</CardTitle>
+              <Shield className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.admins}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Verified</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.verified}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <Clock className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pending}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Priority Section - Pending Document Reviews */}
+        {pendingDocuments.length > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="text-lg text-orange-800 flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Priority: Pending Document Reviews ({pendingDocuments.length})
+              </CardTitle>
+              <CardDescription className="text-orange-700">
+                Users who have uploaded documents that require admin review
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {pendingDocuments.slice(0, 3).map((user) => (
+                  <div key={user._id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <div className="flex items-center space-x-3">
                       <Avatar>
                         <AvatarImage src={user.profilePhoto || "/placeholder.svg"} />
                         <AvatarFallback>
                           {user.name
-                            .split(" ")
+                            ?.split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
@@ -438,22 +448,19 @@ export default function UsersPage() {
                       <div>
                         <div className="font-medium">{user.name}</div>
                         <div className="text-sm text-muted-foreground">{user.email}</div>
+                        <Badge className={getRoleColor(user.role)} size="sm">
+                          {user.role.replace("_", " ")}
+                        </Badge>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getRoleColor(user.role)}>{user.role.replace("_", " ")}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(user)}
-                      <span className="text-sm">{getStatusText(user)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.location ? `${user.location.city}, ${user.location.state}` : "N/A"}</TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-muted-foreground text-right">
+                        <div>Documents pending</div>
+                        <div>
+                          {user.documents?.nationalID?.status === "pending" && "National ID"}
+                          {user.documents?.certificationFiles?.some((f) => f.status === "pending") && " Certifications"}
+                        </div>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -461,141 +468,563 @@ export default function UsersPage() {
                           setSelectedUser(user)
                           setIsViewDialogOpen(true)
                         }}
+                        className="text-blue-600 hover:text-blue-700"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        Review
                       </Button>
-                      {(user.role === "freelancer" || user.role === "emergency_unit") &&
-                        user.hasUploadedDocuments &&
-                        !user.isVerified && (
+                    </div>
+                  </div>
+                ))}
+                {pendingDocuments.length > 3 && (
+                  <div className="text-center">
+                    <Button variant="outline" onClick={() => setActiveTab("pending")} className="text-orange-600">
+                      View All {pendingDocuments.length} Pending
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tabs and Search */}
+        <div className="space-y-4">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-5 mb-4">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="verified">Verified</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="freelancers">Freelancers</TabsTrigger>
+              <TabsTrigger value="emergency_units">Units</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <MobileSearch onSearch={setSearchTerm} placeholder="Search users..." filters={filterComponent} />
+        </div>
+
+        {/* Users Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Users ({filteredUsers.length})</CardTitle>
+            <CardDescription>Comprehensive list of all system users</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar>
+                            <AvatarImage src={user.profilePhoto || "/placeholder.svg"} />
+                            <AvatarFallback>
+                              {user.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getRoleColor(user.role)}>{user.role.replace("_", " ")}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {getStatusIcon(user)}
+                          <span className="text-sm">{getStatusText(user)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {user.phone || "N/A"}
+                          </div>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            {user.location ? `${user.location.city}, ${user.location.state}` : "N/A"}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleVerifyUser(user._id, "verify")}
-                            className="text-green-600 hover:text-green-700"
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setIsViewDialogOpen(true)
+                            }}
                           >
-                            <CheckCircle className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setUserToDelete(user)
+                              setIsDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex flex-col items-center justify-center">
+                        <Users className="h-12 w-12 text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">No users found</h3>
+                        <p className="text-gray-500">
+                          {searchTerm || selectedRole !== "all" || selectedStatus !== "all"
+                            ? "Try adjusting your filters"
+                            : "No users have been registered yet"}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      {/* View User Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
-            <DialogDescription>Detailed information about the user</DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={selectedUser.profilePhoto || "/placeholder.svg"} />
-                  <AvatarFallback className="text-lg">
-                    {selectedUser.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
-                  <p className="text-muted-foreground">{selectedUser.email}</p>
-                  <Badge className={getRoleColor(selectedUser.role)}>{selectedUser.role.replace("_", " ")}</Badge>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Phone</Label>
-                  <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Status</Label>
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(selectedUser)}
-                    <span className="text-sm">{getStatusText(selectedUser)}</span>
+        {/* View User Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>User Details</DialogTitle>
+              <DialogDescription>Comprehensive user information and document management</DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-6">
+                {/* User Header */}
+                <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={selectedUser.profilePhoto || "/placeholder.svg"} />
+                    <AvatarFallback className="text-lg">
+                      {selectedUser.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
+                    <p className="text-muted-foreground">{selectedUser.email}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className={getRoleColor(selectedUser.role)}>{selectedUser.role.replace("_", " ")}</Badge>
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(selectedUser)}
+                        <span className="text-sm">{getStatusText(selectedUser)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Location</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedUser.location ? `${selectedUser.location.city}, ${selectedUser.location.state}` : "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Joined</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(selectedUser.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              {selectedUser.servicesOffered && (
-                <div>
-                  <Label className="text-sm font-medium">Services Offered</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedUser.servicesOffered.map((service, index) => (
-                      <Badge key={index} variant="secondary">
-                        {service}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {selectedUser && selectedUser.documents && (
-                <div>
-                  <Label className="text-sm font-medium">Documents</Label>
-                  <div className="space-y-2 mt-1">
-                    {selectedUser.documents.nationalID && (
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">National ID</span>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
+
+                <Tabs defaultValue="details" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="documents">Documents</TabsTrigger>
+                    <TabsTrigger value="activity">Activity</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="details" className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Phone</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Phone className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{selectedUser.phone || "Not provided"}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Email</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{selectedUser.email}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Location</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            {selectedUser.location
+                              ? `${selectedUser.location.city}, ${selectedUser.location.state}`
+                              : "Not specified"}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Joined</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : "Unknown"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedUser.servicesOffered && selectedUser.servicesOffered.length > 0 && (
+                      <div>
+                        <Label className="text-sm font-medium">Services Offered</Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedUser.servicesOffered.map((service, index) => (
+                            <Badge key={index} variant="secondary">
+                              {service}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
-                    {selectedUser.documents.certificationFiles?.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Certification {index + 1}</span>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
+                  </TabsContent>
+
+                  <TabsContent value="documents" className="space-y-4">
+                    {selectedUser.documents ? (
+                      <div className="space-y-4">
+                        {/* National ID */}
+                        {selectedUser.documents.nationalID && (
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                National ID
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Badge
+                                    className={
+                                      selectedUser.documents.nationalID.status === "approved"
+                                        ? "bg-green-100 text-green-800"
+                                        : selectedUser.documents.nationalID.status === "rejected"
+                                          ? "bg-red-100 text-red-800"
+                                          : "bg-orange-100 text-orange-800"
+                                    }
+                                  >
+                                    {selectedUser.documents.nationalID.status}
+                                  </Badge>
+                                  {selectedUser.documents.nationalID.reviewedAt && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Reviewed:{" "}
+                                      {new Date(selectedUser.documents.nationalID.reviewedAt).toLocaleString()}
+                                    </p>
+                                  )}
+                                  {selectedUser.documents.nationalID.reason && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Reason: {selectedUser.documents.nationalID.reason}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="sm">
+                                    <Download className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                  {selectedUser.documents.nationalID.status === "pending" && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-green-600"
+                                        onClick={() => {
+                                          setDocumentToReview({
+                                            userId: selectedUser._id,
+                                            type: "nationalID",
+                                            index: null,
+                                          })
+                                          setReviewData({ status: "approved", reason: "" })
+                                          setIsReviewDialogOpen(true)
+                                        }}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-red-600"
+                                        onClick={() => {
+                                          setDocumentToReview({
+                                            userId: selectedUser._id,
+                                            type: "nationalID",
+                                            index: null,
+                                          })
+                                          setReviewData({ status: "rejected", reason: "" })
+                                          setIsReviewDialogOpen(true)
+                                        }}
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Reject
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Certification Files */}
+                        {selectedUser.documents.certificationFiles &&
+                          selectedUser.documents.certificationFiles.length > 0 && (
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="text-base flex items-center gap-2">
+                                  <FileText className="h-4 w-4" />
+                                  Certification Files
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-3">
+                                  {selectedUser.documents.certificationFiles.map((file, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex items-center justify-between p-3 border rounded-lg"
+                                    >
+                                      <div>
+                                        <div className="font-medium">Certification {index + 1}</div>
+                                        <Badge
+                                          className={
+                                            file.status === "approved"
+                                              ? "bg-green-100 text-green-800"
+                                              : file.status === "rejected"
+                                                ? "bg-red-100 text-red-800"
+                                                : "bg-orange-100 text-orange-800"
+                                          }
+                                        >
+                                          {file.status}
+                                        </Badge>
+                                        {file.reviewedAt && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            Reviewed: {new Date(file.reviewedAt).toLocaleString()}
+                                          </p>
+                                        )}
+                                        {file.reason && (
+                                          <p className="text-xs text-muted-foreground mt-1">Reason: {file.reason}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Button variant="outline" size="sm">
+                                          <Download className="h-4 w-4 mr-1" />
+                                          View
+                                        </Button>
+                                        {file.status === "pending" && (
+                                          <>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="text-green-600"
+                                              onClick={() => {
+                                                setDocumentToReview({
+                                                  userId: selectedUser._id,
+                                                  type: "certification",
+                                                  index: index,
+                                                })
+                                                setReviewData({ status: "approved", reason: "" })
+                                                setIsReviewDialogOpen(true)
+                                              }}
+                                            >
+                                              <CheckCircle className="h-4 w-4 mr-1" />
+                                              Approve
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="text-red-600"
+                                              onClick={() => {
+                                                setDocumentToReview({
+                                                  userId: selectedUser._id,
+                                                  type: "certification",
+                                                  index: index,
+                                                })
+                                                setReviewData({ status: "rejected", reason: "" })
+                                                setIsReviewDialogOpen(true)
+                                              }}
+                                            >
+                                              <XCircle className="h-4 w-4 mr-1" />
+                                              Reject
+                                            </Button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
                       </div>
-                    ))}
-                  </div>
-                  {selectedUser.documentsUploadedAt && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Uploaded: {new Date(selectedUser.documentsUploadedAt).toLocaleString()}
-                    </p>
-                  )}
+                    ) : (
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No documents uploaded</h3>
+                        <p className="text-gray-500">This user hasn't uploaded any documents yet.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="activity" className="space-y-4">
+                    <div className="text-center py-8">
+                      <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Activity Log</h3>
+                      <p className="text-gray-500">User activity tracking will be displayed here.</p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Document Review Dialog */}
+        <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+          <DialogContent className="max-w-md mx-4">
+            <DialogHeader>
+              <DialogTitle>{reviewData.status === "approved" ? "Approve Document" : "Reject Document"}</DialogTitle>
+              <DialogDescription>
+                {reviewData.status === "approved"
+                  ? "Approve this document and verify the user"
+                  : "Reject this document and provide a reason"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {reviewData.status === "rejected" && (
+                <div>
+                  <Label htmlFor="reason">Reason for rejection *</Label>
+                  <Textarea
+                    id="reason"
+                    placeholder="Please provide a reason for rejecting this document..."
+                    value={reviewData.reason}
+                    onChange={(e) => setReviewData((prev) => ({ ...prev, reason: e.target.value }))}
+                    className="mt-2"
+                  />
                 </div>
               )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
-            </Button>
-            {(selectedUser?.role === "freelancer" || selectedUser?.role === "emergency_unit") &&
-              selectedUser.hasUploadedDocuments &&
-              !selectedUser.isVerified && (
-                <Button
-                  onClick={() => {
-                    handleVerifyUser(selectedUser._id, "verify")
-                    setIsViewDialogOpen(false)
-                  }}
-                >
-                  Verify User
-                </Button>
+              {reviewData.status === "approved" && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertTitle>Approve Document</AlertTitle>
+                  <AlertDescription>This will approve the document and mark the user as verified.</AlertDescription>
+                </Alert>
               )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsReviewDialogOpen(false)
+                  setDocumentToReview(null)
+                  setReviewData({ status: "", reason: "" })
+                }}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReviewDocument}
+                disabled={submitting || (reviewData.status === "rejected" && !reviewData.reason.trim())}
+                className={
+                  reviewData.status === "approved" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+                }
+              >
+                {submitting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {reviewData.status === "approved" ? (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    ) : (
+                      <XCircle className="h-4 w-4 mr-2" />
+                    )}
+                    {reviewData.status === "approved" ? "Approve" : "Reject"}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="max-w-md mx-4">
+            <DialogHeader>
+              <DialogTitle>Delete User</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this user? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Warning</AlertTitle>
+                <AlertDescription>
+                  This will permanently delete the user and all associated data from the system.
+                </AlertDescription>
+              </Alert>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false)
+                  setUserToDelete(null)
+                }}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteUser} disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete User"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </PullToRefresh>
   )
 }
