@@ -1,348 +1,165 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Toggle } from "@/components/ui/toggle"
-import {
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Quote,
-  Link,
-  ImageIcon,
-  Undo,
-  Redo,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Code,
-  Heading1,
-  Heading2,
-  Heading3,
-  Type,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useEffect, useRef, forwardRef, useImperativeHandle } from "react"
+import Quill from "quill"
+import "quill/dist/quill.snow.css"
 
-export function RichTextEditor({ value = "", onChange, placeholder = "Start writing...", className }) {
-  const editorRef = useRef(null)
-  const [isEditorReady, setIsEditorReady] = useState(false)
-  const [linkUrl, setLinkUrl] = useState("")
-  const [imageUrl, setImageUrl] = useState("")
-  const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false)
-  const [isImagePopoverOpen, setIsImagePopoverOpen] = useState(false)
+// Emergency templates for first aid guides
+const emergencyTemplates = {
+  "emergency-step": `
+    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #fca5a5; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h4 style="color: #dc2626; margin: 0 0 0.75rem 0; font-size: 1.1em; font-weight: 600;">🚨 Emergency Step</h4>
+      <p style="margin: 0; color: #7f1d1d;">Enter critical emergency action here...</p>
+    </div>
+  `,
+  "warning-box": `
+    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #fbbf24; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h4 style="color: #d97706; margin: 0 0 0.75rem 0; font-size: 1.1em; font-weight: 600;">⚠️ Warning</h4>
+      <p style="margin: 0; color: #92400e;">Enter important warning information here...</p>
+    </div>
+  `,
+  "info-box": `
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #60a5fa; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h4 style="color: #2563eb; margin: 0 0 0.75rem 0; font-size: 1.1em; font-weight: 600;">ℹ️ Information</h4>
+      <p style="margin: 0; color: #1e40af;">Enter helpful information here...</p>
+    </div>
+  `,
+  "success-box": `
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #4ade80; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h4 style="color: #16a34a; margin: 0 0 0.75rem 0; font-size: 1.1em; font-weight: 600;">✅ Success</h4>
+      <p style="margin: 0; color: #15803d;">Enter success criteria or positive outcome here...</p>
+    </div>
+  `,
+}
 
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = value
-      setIsEditorReady(true)
-    }
-  }, [value])
+export const RichTextEditor = forwardRef(
+  ({ value = "", onChange, placeholder = "Write your emergency guide here...", height = 400 }, ref) => {
+    const editorRef = useRef(null)
+    const quillRef = useRef(null)
 
-  const execCommand = (command, value = null) => {
-    document.execCommand(command, false, value)
-    editorRef.current?.focus()
-    handleContentChange()
-  }
+    useEffect(() => {
+      if (editorRef.current && !quillRef.current) {
+        // Initialize Quill with a single, clean toolbar
+        quillRef.current = new Quill(editorRef.current, {
+          theme: "snow",
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ["bold", "italic", "underline", "strike"],
+              [{ color: [] }, { background: [] }],
+              [{ list: "ordered" }, { list: "bullet" }],
+              [{ align: [] }],
+              ["blockquote", "code-block"],
+              ["link", "image"],
+              ["clean"],
+            ],
+          },
+          placeholder: placeholder,
+        })
 
-  const handleContentChange = () => {
-    if (editorRef.current && onChange) {
-      onChange(editorRef.current.innerHTML)
-    }
-  }
+        // Set initial content
+        if (value) {
+          quillRef.current.root.innerHTML = value
+        }
 
-  const insertLink = () => {
-    if (linkUrl) {
-      execCommand("createLink", linkUrl)
-      setLinkUrl("")
-      setIsLinkPopoverOpen(false)
-    }
-  }
+        // Listen for text changes
+        quillRef.current.on("text-change", () => {
+          const html = quillRef.current.root.innerHTML
+          if (onChange) {
+            onChange(html)
+          }
+        })
+      }
 
-  const insertImage = () => {
-    if (imageUrl) {
-      execCommand("insertImage", imageUrl)
-      setImageUrl("")
-      setIsImagePopoverOpen(false)
-    }
-  }
+      return () => {
+        if (quillRef.current) {
+          quillRef.current = null
+        }
+      }
+    }, [])
 
-  const formatBlock = (tag) => {
-    execCommand("formatBlock", tag)
-  }
+    // Update content when value prop changes
+    useEffect(() => {
+      if (quillRef.current && value !== quillRef.current.root.innerHTML) {
+        quillRef.current.root.innerHTML = value
+      }
+    }, [value])
 
-  const isCommandActive = (command) => {
-    try {
-      return document.queryCommandState(command)
-    } catch (e) {
-      return false
-    }
-  }
+    // Expose methods to parent component
+    useImperativeHandle(ref, () => ({
+      getContent: () => {
+        if (quillRef.current) {
+          return quillRef.current.root.innerHTML
+        }
+        return ""
+      },
+      setContent: (content) => {
+        if (quillRef.current) {
+          quillRef.current.root.innerHTML = content
+        }
+      },
+      insertTemplate: (templateType) => {
+        if (quillRef.current && emergencyTemplates[templateType]) {
+          const range = quillRef.current.getSelection()
+          if (range) {
+            quillRef.current.clipboard.dangerouslyPasteHTML(range.index, emergencyTemplates[templateType])
+          }
+        }
+      },
+      focus: () => {
+        if (quillRef.current) {
+          quillRef.current.focus()
+        }
+      },
+    }))
 
-  const toolbarButtons = [
-    {
-      group: "text-style",
-      buttons: [
-        { command: "bold", icon: Bold, tooltip: "Bold" },
-        { command: "italic", icon: Italic, tooltip: "Italic" },
-        { command: "underline", icon: Underline, tooltip: "Underline" },
-      ],
-    },
-    {
-      group: "headings",
-      buttons: [
-        { action: () => formatBlock("h1"), icon: Heading1, tooltip: "Heading 1" },
-        { action: () => formatBlock("h2"), icon: Heading2, tooltip: "Heading 2" },
-        { action: () => formatBlock("h3"), icon: Heading3, tooltip: "Heading 3" },
-        { action: () => formatBlock("p"), icon: Type, tooltip: "Paragraph" },
-      ],
-    },
-    {
-      group: "alignment",
-      buttons: [
-        { command: "justifyLeft", icon: AlignLeft, tooltip: "Align Left" },
-        { command: "justifyCenter", icon: AlignCenter, tooltip: "Align Center" },
-        { command: "justifyRight", icon: AlignRight, tooltip: "Align Right" },
-      ],
-    },
-    {
-      group: "lists",
-      buttons: [
-        { command: "insertUnorderedList", icon: List, tooltip: "Bullet List" },
-        { command: "insertOrderedList", icon: ListOrdered, tooltip: "Numbered List" },
-        { command: "formatBlock", value: "blockquote", icon: Quote, tooltip: "Quote" },
-      ],
-    },
-    {
-      group: "media",
-      buttons: [
-        {
-          action: () => setIsLinkPopoverOpen(true),
-          icon: Link,
-          tooltip: "Insert Link",
-          popover: true,
-        },
-        {
-          action: () => setIsImagePopoverOpen(true),
-          icon: ImageIcon,
-          tooltip: "Insert Image",
-          popover: true,
-        },
-        { command: "insertHTML", value: "<code></code>", icon: Code, tooltip: "Code" },
-      ],
-    },
-    {
-      group: "history",
-      buttons: [
-        { command: "undo", icon: Undo, tooltip: "Undo" },
-        { command: "redo", icon: Redo, tooltip: "Redo" },
-      ],
-    },
-  ]
+    return (
+      <div className="rich-text-editor-wrapper">
+        <div ref={editorRef} style={{ height: `${height}px` }} />
 
-  return (
-    <div className={cn("border rounded-lg overflow-hidden bg-white", className)}>
-      {/* Toolbar */}
-      <div className="border-b bg-gray-50 p-2">
-        <div className="flex flex-wrap items-center gap-1">
-          {toolbarButtons.map((group, groupIndex) => (
-            <div key={group.group} className="flex items-center">
-              {group.buttons.map((button, buttonIndex) => {
-                const Icon = button.icon
-                const isActive = button.command ? isCommandActive(button.command) : false
+        <style jsx global>{`
+        .rich-text-editor-wrapper .ql-toolbar {
+          border: 1px solid #e5e7eb;
+          border-bottom: none;
+          background: #f9fafb;
+          border-radius: 8px 8px 0 0;
+          padding: 8px;
+        }
 
-                if (button.popover) {
-                  return (
-                    <Popover
-                      key={buttonIndex}
-                      open={button.icon === Link ? isLinkPopoverOpen : isImagePopoverOpen}
-                      onOpenChange={button.icon === Link ? setIsLinkPopoverOpen : setIsImagePopoverOpen}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-gray-200"
-                          title={button.tooltip}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        {button.icon === Link ? (
-                          <div className="space-y-3">
-                            <div>
-                              <Label htmlFor="link-url">Link URL</Label>
-                              <Input
-                                id="link-url"
-                                placeholder="https://example.com"
-                                value={linkUrl}
-                                onChange={(e) => setLinkUrl(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && insertLink()}
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm" onClick={() => setIsLinkPopoverOpen(false)}>
-                                Cancel
-                              </Button>
-                              <Button size="sm" onClick={insertLink}>
-                                Insert Link
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <div>
-                              <Label htmlFor="image-url">Image URL</Label>
-                              <Input
-                                id="image-url"
-                                placeholder="https://example.com/image.jpg"
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && insertImage()}
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm" onClick={() => setIsImagePopoverOpen(false)}>
-                                Cancel
-                              </Button>
-                              <Button size="sm" onClick={insertImage}>
-                                Insert Image
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </PopoverContent>
-                    </Popover>
-                  )
-                }
+        .rich-text-editor-wrapper .ql-container {
+          border: 1px solid #e5e7eb;
+          border-radius: 0 0 8px 8px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-                return (
-                  <Toggle
-                    key={buttonIndex}
-                    pressed={isActive}
-                    onPressedChange={() => {
-                      if (button.action) {
-                        button.action()
-                      } else if (button.command) {
-                        execCommand(button.command, button.value)
-                      }
-                    }}
-                    size="sm"
-                    className="h-8 w-8 p-0 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700"
-                    title={button.tooltip}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </Toggle>
-                )
-              })}
-              {groupIndex < toolbarButtons.length - 1 && <Separator orientation="vertical" className="mx-1 h-6" />}
-            </div>
-          ))}
-        </div>
-      </div>
+        .rich-text-editor-wrapper .ql-editor {
+          font-size: 14px;
+          line-height: 1.6;
+          color: #374151;
+          min-height: 200px;
+        }
 
-      {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="min-h-[300px] p-4 focus:outline-none prose prose-sm max-w-none"
-        style={{
-          lineHeight: "1.6",
-        }}
-        onInput={handleContentChange}
-        onBlur={handleContentChange}
-        data-placeholder={placeholder}
-        suppressContentEditableWarning={true}
-      />
-
-      <style jsx>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
+        .rich-text-editor-wrapper .ql-editor.ql-blank::before {
           color: #9ca3af;
-          pointer-events: none;
+          font-style: normal;
         }
-        
-        [contenteditable] h1 {
-          font-size: 1.875rem;
-          font-weight: 700;
-          margin: 1rem 0 0.5rem 0;
-          color: #1f2937;
+
+        .rich-text-editor-wrapper .ql-toolbar button:hover {
+          color: #3b82f6;
         }
-        
-        [contenteditable] h2 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 1rem 0 0.5rem 0;
-          color: #374151;
-        }
-        
-        [contenteditable] h3 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin: 0.75rem 0 0.5rem 0;
-          color: #4b5563;
-        }
-        
-        [contenteditable] p {
-          margin: 0.5rem 0;
-          color: #374151;
-        }
-        
-        [contenteditable] ul, [contenteditable] ol {
-          margin: 0.5rem 0;
-          padding-left: 1.5rem;
-        }
-        
-        [contenteditable] li {
-          margin: 0.25rem 0;
-        }
-        
-        [contenteditable] blockquote {
-          border-left: 4px solid #e5e7eb;
-          padding-left: 1rem;
-          margin: 1rem 0;
-          font-style: italic;
-          color: #6b7280;
-          background-color: #f9fafb;
-          padding: 1rem;
-          border-radius: 0.375rem;
-        }
-        
-        [contenteditable] code {
-          background-color: #f3f4f6;
-          padding: 0.125rem 0.25rem;
-          border-radius: 0.25rem;
-          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-          font-size: 0.875rem;
-          color: #dc2626;
-        }
-        
-        [contenteditable] a {
-          color: #2563eb;
-          text-decoration: underline;
-        }
-        
-        [contenteditable] a:hover {
+
+        .rich-text-editor-wrapper .ql-toolbar button.ql-active {
           color: #1d4ed8;
         }
-        
-        [contenteditable] img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 0.375rem;
-          margin: 0.5rem 0;
-        }
-        
-        [contenteditable]:focus {
-          outline: none;
+
+        /* Ensure no duplicate toolbars */
+        .rich-text-editor-wrapper .ql-toolbar:not(:first-child) {
+          display: none;
         }
       `}</style>
-    </div>
-  )
-}
+      </div>
+    )
+  },
+)
+
+RichTextEditor.displayName = "RichTextEditor"
