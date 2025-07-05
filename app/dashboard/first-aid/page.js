@@ -153,13 +153,13 @@ export default function FirstAidGuidesPage() {
     {
       id: "Seizure",
       name: "Seizure",
-      icon: "😵‍💫",
+      icon: "⚠️",
       color: "bg-indigo-100 text-indigo-800",
     },
     {
       id: "BloodSugar",
       name: "Blood Sugar",
-      icon: "😵‍💫",
+      icon: "🩸",
       color: "bg-indigo-100 text-indigo-800",
     },
     {
