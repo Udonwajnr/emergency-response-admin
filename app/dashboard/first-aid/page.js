@@ -144,6 +144,12 @@ export default function FirstAidGuidesPage() {
       icon: "🧠",
       color: "bg-indigo-100 text-indigo-800",
     },
+    {
+      id: "Trauma",
+      name: "Trauma",
+      icon: "😵‍💫",
+      color: "bg-indigo-100 text-indigo-800",
+    },
   ];
 
   const languages = [
