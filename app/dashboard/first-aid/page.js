@@ -168,6 +168,18 @@ export default function FirstAidGuidesPage() {
       icon: "🧠",
       color: "bg-indigo-100 text-indigo-800",
     },
+    {
+      id: "childbirth",
+      name: "Child Birth",
+      icon: "👶",
+      color: "bg-indigo-100 text-indigo-800",
+    },
+    {
+      id: "unconciousness",
+      name: "Unconciousness",
+      icon: "👶",
+      color: "bg-indigo-100 text-indigo-800",
+    },
   ];
 
   const languages = [
