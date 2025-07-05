@@ -155,6 +155,10 @@ export default function FirstAidGuidesPage() {
     { code: "zh", name: "Chinese", flag: "🇨🇳" },
     { code: "pt", name: "Portuguese", flag: "🇵🇹" },
     { code: "ru", name: "Russian", flag: "🇷🇺" },
+    { code: "pg", name: "Pidgin", flag: "PG" },
+    { code: "hu", name: "Hausa", flag: "HU" },
+    { code: "yu", name: "Youruba", flag: "YB" },
+
   ];
 
   const severityLevels = [
