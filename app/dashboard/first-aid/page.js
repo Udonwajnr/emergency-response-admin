@@ -150,6 +150,12 @@ export default function FirstAidGuidesPage() {
       icon: "😵‍💫",
       color: "bg-indigo-100 text-indigo-800",
     },
+    {
+      id: "Seizure",
+      name: "Seizure",
+      icon: "😵‍💫",
+      color: "bg-indigo-100 text-indigo-800",
+    },
   ];
 
   const languages = [
