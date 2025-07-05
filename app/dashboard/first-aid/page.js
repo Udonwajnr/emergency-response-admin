@@ -151,7 +151,7 @@ export default function FirstAidGuidesPage() {
     { code: "pg", name: "Pidgin", flag: "PG" },
     { code: "hu", name: "Hausa", flag: "HU" },
     { code: "yu", name: "Youruba", flag: "YB" },
-    { code: "Ig", name: "Igbo", flag: "IG" },
+    { code: "ig", name: "Igbo", flag: "IG" },
   ];
 
   const severityLevels = [
