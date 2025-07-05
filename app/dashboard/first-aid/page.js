@@ -148,17 +148,10 @@ export default function FirstAidGuidesPage() {
 
   const languages = [
     { code: "en", name: "English", flag: "🇺🇸" },
-    { code: "es", name: "Spanish", flag: "🇪🇸" },
-    { code: "fr", name: "French", flag: "🇫🇷" },
-    { code: "de", name: "German", flag: "🇩🇪" },
-    { code: "ar", name: "Arabic", flag: "🇸🇦" },
-    { code: "zh", name: "Chinese", flag: "🇨🇳" },
-    { code: "pt", name: "Portuguese", flag: "🇵🇹" },
-    { code: "ru", name: "Russian", flag: "🇷🇺" },
     { code: "pg", name: "Pidgin", flag: "PG" },
     { code: "hu", name: "Hausa", flag: "HU" },
     { code: "yu", name: "Youruba", flag: "YB" },
-
+    { code: "Ig", name: "Igbo", flag: "IG" },
   ];
 
   const severityLevels = [
