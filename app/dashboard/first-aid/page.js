@@ -156,6 +156,12 @@ export default function FirstAidGuidesPage() {
       icon: "😵‍💫",
       color: "bg-indigo-100 text-indigo-800",
     },
+    {
+      id: "BloodSugar",
+      name: "Blood Sugar",
+      icon: "😵‍💫",
+      color: "bg-indigo-100 text-indigo-800",
+    },
   ];
 
   const languages = [
