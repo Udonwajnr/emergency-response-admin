@@ -162,6 +162,12 @@ export default function FirstAidGuidesPage() {
       icon: "😵‍💫",
       color: "bg-indigo-100 text-indigo-800",
     },
+    {
+      id: "MentalHealth",
+      name: "Mental Health",
+      icon: "🧠",
+      color: "bg-indigo-100 text-indigo-800",
+    },
   ];
 
   const languages = [
