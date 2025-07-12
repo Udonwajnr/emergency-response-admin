@@ -1,5 +1,4 @@
 "use client"
-
 import {
   Sidebar,
   SidebarContent,
@@ -13,7 +12,17 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/AuthContext"
-import { LayoutDashboard, Users, Shield, Settings, LogOut, Heart, UserCheck, AlertTriangle } from "lucide-react"
+import {
+  LayoutDashboard,
+  Users,
+  Shield,
+  Settings,
+  LogOut,
+  Heart,
+  UserCheck,
+  AlertTriangle,
+  Activity,
+} from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -37,6 +46,11 @@ const menuItems = [
     title: "Emergencies",
     url: "/dashboard/emergencies",
     icon: AlertTriangle,
+  },
+  {
+    title: "Health Alerts",
+    url: "/dashboard/health-alerts",
+    icon: Activity,
   },
   {
     title: "Emergency Units",
