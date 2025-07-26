@@ -777,7 +777,7 @@ export default function EmergenciesPage() {
                           height="100%"
                           frameBorder="0"
                           style={{ border: 0 }}
-                          src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${selectedEmergency.location.coordinates[1]},${selectedEmergency.location.coordinates[0]}`}
+                          src={`https://www.google.com/maps/embed/v1/place?key=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${selectedEmergency.location.coordinates[1]},${selectedEmergency.location.coordinates[0]}`}
                           allowFullScreen
                         ></iframe>
                       </div>
